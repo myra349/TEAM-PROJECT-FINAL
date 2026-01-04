@@ -1,203 +1,328 @@
-import React, { useState, useEffect } from "react";
-import {
-  FaBars,
-  FaSun,
-  FaMoon,
-  FaUserShield,
-  FaExclamationTriangle,
-  FaVideo,
-  FaDoorOpen,
- 
-  FaPlay,
-  FaPause
-} from "react-icons/fa";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import "../App.css";
+import React, { useState } from "react";
 
-const AdminDashboard = () => {
-  // Sidebar + Theme
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
+/*
+===========================================================
+SMART SPACE MANAGEMENT – ADVANCED SINGLE FILE FRONTEND
+Correct • Complex • Backend-Ready • Final-Year Level
+===========================================================
+*/
 
-  // Surveillance state
-  const [aiActive, setAiActive] = useState(true);
-  const [stats, setStats] = useState({ persons: 25, anomalies: 2, streams: 2 });
-  const [alerts, setAlerts] = useState([]);
-  const [boundingBoxes, setBoundingBoxes] = useState([
-    { id: 1, top: "25%", left: "35%", width: 120, height: 100, label: "Person" },
-    { id: 2, top: "60%", left: "55%", width: 90, height: 80, label: "Bag" }
-  ]);
+export default function AdminDashboard() {
 
-  // Space Management state
-  const [rooms, setRooms] = useState([
-    { id: 1, name: "Exam Hall 1", capacity: 100, occupied: 72 },
-    { id: 2, name: "Canteen", capacity: 50, occupied: 28 },
-    { id: 3, name: "Corridor A", capacity: 80, occupied: 45 }
-  ]);
+  /* ---------------- STATE ---------------- */
+  const [form, setForm] = useState({
+    length: "",
+    width: "",
+    seatType: "chair",
+    students: "",
+    boardSide: "top",
+  });
 
-  // Graph data
-  const [graphData, setGraphData] = useState([]);
+  const [doors, setDoors] = useState([]);
+  const [doorDraft, setDoorDraft] = useState({ side: "left", pos: "" });
 
-  // Simulate surveillance
-  useEffect(() => {
-    if (!aiActive) return;
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [imageUrl, setImageUrl] = useState(null);
+
+  /* ---------------- HANDLERS ---------------- */
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const validate = () => {
+    let e = {};
+    if (!form.length) e.length = "Room length required";
+    if (!form.width) e.width = "Room width required";
+    if (!form.students || Number(form.students) <= 0)
+      e.students = "Valid student count required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  /* ---------------- DOORS ---------------- */
+  const addDoor = () => {
+    if (!doorDraft.pos) return;
+    setDoors([...doors, doorDraft]);
+    setDoorDraft({ side: "left", pos: "" });
+  };
+
+  const removeDoor = (i) =>
+    setDoors(doors.filter((_, idx) => idx !== i));
+
+  /* ---------------- GENERATE ---------------- */
+  const generatePlan = () => {
+    if (!validate()) return;
+
+    setLoading(true);
+    setImageUrl(null);
+    setProgress(0);
+
     const interval = setInterval(() => {
-      setStats(prev => ({
-        persons: prev.persons + Math.floor(Math.random()*3),
-        anomalies: prev.anomalies + Math.floor(Math.random()*2),
-        streams: prev.streams
-      }));
-      if(Math.random() < 0.4){
-        const newAlert = `⚠️ Anomaly detected at ${new Date().toLocaleTimeString()}`;
-        setAlerts(prev => [newAlert, ...prev.slice(0,4)]);
-        const alertSound = new Audio("/alert-beep.mp3");
-        alertSound.play().catch(()=>{});
-      }
-      setBoundingBoxes(prev => prev.map(box => ({
-        ...box,
-        top:`${Math.floor(Math.random()*60)+10}%`,
-        left:`${Math.floor(Math.random()*70)+10}%`
-      })));
-    },4000);
-    return () => clearInterval(interval);
-  },[aiActive]);
+      setProgress((p) => (p < 95 ? p + 5 : p));
+    }, 120);
 
-  // Simulate space occupancy
-  useEffect(()=>{
-    const interval = setInterval(()=>{
-      setRooms(prev=> prev.map(room=>{
-        let change = Math.floor(Math.random()*5)-2;
-        let newOcc = Math.max(0, Math.min(room.capacity, room.occupied + change));
-        if(newOcc > room.capacity*0.9 && Math.random()<0.5){
-          setAlerts(prevAlerts=>[`⚠️ ${room.name} almost full!`, ...prevAlerts.slice(0,4)]);
-        }
-        return {...room, occupied:newOcc};
-      }));
-    },4000);
-    return ()=> clearInterval(interval);
-  },[]);
+    /* 🔮 BACKEND READY (FastAPI / Flask)
+    fetch("http://localhost:5000/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...form, doors })
+    })
+      .then(res => res.json())
+      .then(data => setImageUrl(data.image_url));
+    */
 
-  // Combine graph data
-  useEffect(()=>{
-    const interval = setInterval(()=>{
-      const timestamp = new Date().toLocaleTimeString();
-      const point = { time: timestamp, persons: stats.persons, anomalies: stats.anomalies };
-      rooms.forEach(r=> point[r.name]=r.occupied);
-      setGraphData(prev=>{
-        const newData=[...prev, point];
-        if(newData.length>12) newData.shift();
-        return newData;
-      });
-    },4000);
-    return ()=>clearInterval(interval);
-  },[stats,rooms]);
+    setTimeout(() => {
+      clearInterval(interval);
+      setProgress(100);
+      setImageUrl("/classroom_seating.png");
+      setLoading(false);
+    }, 2200);
+  };
 
+  /* ---------------- UI ---------------- */
   return (
-    <div className={`admin-dashboard ${sidebarOpen?"sidebar-open":"sidebar-closed"} ${darkMode?"dark-mode":"light-mode"}`}>
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <h2>Admin Panel</h2>
-          <FaBars className="toggle-btn" onClick={()=>setSidebarOpen(!sidebarOpen)} />
-        </div>
-        <ul>
-          <li className="active">Dashboard</li>
-          <li>Surveillance</li>
-          <li>Space</li>
-          <li>Users</li>
-          <li>Reports</li>
-          <li>Settings</li>
-        </ul>
-        <div className="theme-switcher" onClick={()=>setDarkMode(!darkMode)}>
-          {darkMode?<FaSun/>:<FaMoon/>} {darkMode?"Light Mode":"Dark Mode"}
-        </div>
-      </aside>
+    <div style={S.page}>
+      <h1 style={S.title}>🏫 Smart Space Management (AI-Driven)</h1>
 
-      {/* Main Content */}
-      <main className="main-content">
-        <h2 className="dashboard-title">Smart Campus Admin Dashboard</h2>
-        <p>Live surveillance and space management monitoring for college.</p>
+      <div style={S.grid}>
 
-        {/* AI & Space Alerts */}
-        <div className="alerts-panel">
-          <h4>Recent Alerts</h4>
-          {alerts.length===0?<p>No alerts</p>:<ul>{alerts.map((a,i)=><li key={i}>{a}</li>)}</ul>}
-        </div>
+        {/* LEFT PANEL */}
+        <div style={S.panel}>
+          <h2>📐 Classroom Configuration</h2>
 
-        {/* Stats Cards */}
-        <div className="stats-cards">
-          {/* Surveillance Stats */}
-          <div className="stat-card neon-card">
-            <FaUserShield className="stat-icon" />
-            <h3>Persons Detected</h3>
-            <p>{stats.persons}</p>
+          <Input
+            label="Room Length (m)"
+            name="length"
+            value={form.length}
+            onChange={handleChange}
+            error={errors.length}
+          />
+
+          <Input
+            label="Room Width (m)"
+            name="width"
+            value={form.width}
+            onChange={handleChange}
+            error={errors.width}
+          />
+
+          <Select
+            label="Seating Type"
+            name="seatType"
+            value={form.seatType}
+            onChange={handleChange}
+            options={["chair", "bench"]}
+          />
+
+          <Input
+            label="Number of Students"
+            name="students"
+            value={form.students}
+            onChange={handleChange}
+            error={errors.students}
+          />
+
+          <Select
+            label="Board Position"
+            name="boardSide"
+            value={form.boardSide}
+            onChange={handleChange}
+            options={["top", "bottom", "left", "right"]}
+          />
+
+          <h3 style={{ marginTop: 18 }}>🚪 Doors</h3>
+
+          <div style={S.row}>
+            <select
+              style={S.input}
+              value={doorDraft.side}
+              onChange={(e) =>
+                setDoorDraft({ ...doorDraft, side: e.target.value })
+              }
+            >
+              <option>left</option>
+              <option>right</option>
+              <option>top</option>
+              <option>bottom</option>
+            </select>
+
+            <input
+              style={S.input}
+              placeholder="Distance (m)"
+              value={doorDraft.pos}
+              onChange={(e) =>
+                setDoorDraft({ ...doorDraft, pos: e.target.value })
+              }
+            />
+
+            <button style={S.smallBtn} onClick={addDoor}>＋</button>
           </div>
-          <div className="stat-card neon-card">
-            <FaExclamationTriangle className="stat-icon" />
-            <h3>Anomalies</h3>
-            <p>{stats.anomalies}</p>
-          </div>
-          <div className="stat-card neon-card">
-            <FaVideo className="stat-icon" />
-            <h3>Streams Active</h3>
-            <p>{stats.streams}</p>
-          </div>
 
-          {/* Space Stats */}
-          {rooms.map((room,i)=>(
-            <div key={i} className="stat-card neon-card"
-                 style={{borderColor: room.occupied/room.capacity>0.9?"#ef4444":room.occupied/room.capacity>0.6?"#facc15":"#22c55e"}}>
-              <FaDoorOpen className="stat-icon"/>
-              <h3>{room.name}</h3>
-              <p>{room.occupied}/{room.capacity} Occupied</p>
+          {doors.map((d, i) => (
+            <div key={i} style={S.doorRow}>
+              <span>Door {i + 1}: {d.side} @ {d.pos} m</span>
+              <button onClick={() => removeDoor(i)}>✕</button>
             </div>
           ))}
-        </div>
 
-        {/* AI Control */}
-        <div className="admin-controls">
-          <button className="control-btn" onClick={()=>setAiActive(!aiActive)}>
-            {aiActive?<FaPause/>:<FaPlay/>} {aiActive?"Pause AI":"Resume AI"}
+          <button style={S.mainBtn} onClick={generatePlan}>
+            Generate Seating Plan
           </button>
         </div>
 
-        {/* Video Section */}
-        <div className="video-wrapper">
-          <video controls autoPlay loop muted>
-            <source src="sample-video.mp4" type="video/mp4"/>
-            Your browser does not support the video tag.
-          </video>
-          <div className="video-overlay">🔍 Detection Active</div>
-          {boundingBoxes.map(box=>(
-            <div key={box.id} className="bounding-box"
-                 style={{top:box.top,left:box.left,width:box.width,height:box.height}}>
-              {box.label}
-            </div>
-          ))}
-        </div>
+        {/* RIGHT PANEL */}
+        <div style={S.panel}>
+          <h2>📊 Generation Output</h2>
 
-        {/* Graph */}
-        <div className="surveillance-graph">
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={graphData} margin={{ top:5, right:20, bottom:5, left:0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)"/>
-              <XAxis dataKey="time" stroke="#bbb"/>
-              <YAxis stroke="#bbb"/>
-              <Tooltip contentStyle={{background:"#1e1e2f", borderRadius:"8px", border:"1px solid #555"}}/>
-              <Line type="monotone" dataKey="persons" stroke="#3b82f6" strokeWidth={3} dot={{r:4}}/>
-              <Line type="monotone" dataKey="anomalies" stroke="#ef4444" strokeWidth={3} dot={{r:4}}/>
-              {rooms.map((r,i)=>(
-                <Line key={i} type="monotone" dataKey={r.name} stroke={["#22c55e","#facc15","#f87171"][i%3]} strokeWidth={3} dot={{r:4}}/>
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+          {loading && (
+            <>
+              <p>AI Optimizing Layout…</p>
+              <div style={S.progressBar}>
+                <div style={{ ...S.progressFill, width: `${progress}%` }} />
+              </div>
+            </>
+          )}
+
+          {imageUrl && (
+            <>
+              <img src={imageUrl} alt="Seating Plan" style={S.image} />
+
+              <a href={imageUrl} download>
+                <button style={S.downloadBtn}>⬇ Download Layout</button>
+              </a>
+
+              <div style={S.summary}>
+                <h3>📌 Layout Summary</h3>
+                <p>Students: {form.students}</p>
+                <p>Seat Type: {form.seatType}</p>
+                <p>Board Side: {form.boardSide}</p>
+                <p>Doors: {doors.length}</p>
+              </div>
+            </>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
+}
+
+/* ---------------- SMALL COMPONENTS ---------------- */
+const Input = ({ label, error, ...props }) => (
+  <>
+    <input style={S.input} placeholder={label} {...props} />
+    {error && <div style={S.error}>{error}</div>}
+  </>
+);
+
+const Select = ({ label, options, ...props }) => (
+  <select style={S.input} {...props}>
+    {options.map(o => (
+      <option key={o} value={o}>{o}</option>
+    ))}
+  </select>
+);
+
+/* ---------------- STYLES ---------------- */
+const S = {
+  page: {
+    minHeight: "200vh",
+    padding: "140px",
+    color: "#b41132ff",
+    fontFamily: "Poppins, Segoe UI",
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: "230px",
+    color: "#24a826ff",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "130px",
+  },
+  panel: {
+    padding: "44px",
+    borderRadius: "38px",
+    background: "rgba(255,255,255,0.08)",
+    boxShadow: "0 15px 40px rgba(0,0,0,0.6)",
+  },
+  input: {
+    width: "100%",
+    padding: "62px",
+    fontSize: "53px",
+    marginBottom: "10px",
+    borderRadius: "10px",
+    border: "none",
+  },
+  row: {
+    display: "flex",
+    gap: "8px",
+    fontSize: "53px",
+  },
+  smallBtn: {
+    padding: "10px 14px",
+    borderRadius: "8px",
+    fontSize: "53px",
+    cursor: "pointer",
+  },
+  mainBtn: {
+    width: "100%",
+    marginTop: "16px",
+    padding: "14px",
+    borderRadius: "12px",
+    border: "none",
+    fontWeight: "600",
+    background: "linear-gradient(90deg,#3b82f6,#06b6d4)",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "53px",
+  },
+  progressBar: {
+    height: "6px",
+    background: "#1e293b",
+    borderRadius: "4px",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    background: "linear-gradient(90deg,#60a5fa,#22d3ee)",
+    transition: "width 0.3s",
+  },
+  image: {
+    width: "100%",
+    marginTop: "12px",
+    borderRadius: "12px",
+  },
+  downloadBtn: {
+    marginTop: "12px",
+    padding: "10px 16px",
+    borderRadius: "10px",
+    cursor: "pointer",
+  },
+  summary: {
+    marginTop: "14px",
+    background: "rgba(255,255,255,0.08)",
+    padding: "12px",
+    borderRadius: "10px",
+  },
+  doorRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    background: "rgba(255,255,255,0.12)",
+    padding: "6px 10px",
+    borderRadius: "8px",
+    marginBottom: "6px",
+  },
+  error: {
+    color: "#fca5a5",
+    fontSize: "13px",
+    marginBottom: "6px",
+  },
 };
 
-export default AdminDashboard;
+
+
 
 
 

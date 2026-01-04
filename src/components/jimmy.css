@@ -1747,5 +1747,81 @@ button:hover { background: #25d4ec; }
   --glass: rgba(15,98,254,0.06);
   --shadow: 0 6px 20px rgba(16,24,40,0.06);
 }
+.load-container {
+  padding: 30px;
+  background: #0f172a;
+  color: #e5e7eb;
+  min-height: 100vh;
+}
 
+h2 {
+  font-size: 28px;
+  margin-bottom: 5px;
+}
 
+.subtitle {
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: center;
+}
+
+th {
+  background: #1e293b;
+}
+
+td {
+  background: #020617;
+}
+
+input {
+  width: 60px;
+  padding: 6px;
+  background: #020617;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+  border-radius: 6px;
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #022c22;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.load {
+  font-weight: bold;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.over {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
